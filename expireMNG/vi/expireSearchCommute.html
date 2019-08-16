@@ -1,0 +1,411 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4">
+<head>
+	<title>社員管理システム 検索</title>
+	<meta th:replace="common/layout"/>
+	<meta th:name="_csrf" th:content="${_csrf.token}"/>
+	<meta th:name="_csrf_header" th:content="${_csrf.headerName}"/>
+	<link href="/css/expire.css" rel="stylesheet"/>
+	<script src="/js/expireMNG/expireMNG.js"></script>
+</head>
+<script type="text/javascript" th:inline="javascript">
+
+/*<![CDATA[*/
+var token = $("meta[name='_csrf']").attr("content");
+var header = $("meta[name='_csrf_header']").attr("content");
+$(document).ajaxSend(function(e,xhr,options) {
+	xhr.setRequestHeader(header, token);
+})
+var commuteFormSearch = /*[[${submitForm.searchForm}]]*/;
+var deptLevel2 = /*[[${submitForm.searchForm.deptLevel2}]]*/;
+var deptLevel3 = /*[[${submitForm.searchForm.deptLevel3}]]*/;
+var deptLevel4 = /*[[${submitForm.searchForm.deptLevel4}]]*/;
+var deptLevel5 = /*[[${submitForm.searchForm.deptLevel5}]]*/;
+var includingCheck = /*[[${submitForm.searchForm.includingRetire}]]*/;
+$(document).ready(function() {
+	initDefaultCommute();
+	var deptLevel = /*[[${deptLevel}]]*/
+	$("#dept2, #dept3, #dept4, #dept5").change(function(e) {
+		if (deptLevel <= 2) {
+			if ($(this).attr("id") == "dept2") {
+				changeOption($(this).val(), 3);
+			} else if ($(this).attr("id") == "dept3") {
+				changeOption($(this).val(), 4);
+			} else if ($(this).attr("id") == "dept4") {
+				changeOption($(this).val(), 5);
+			}
+		} else if (deptLevel == 3) {
+			if ($(this).attr("id") == "dept3") {
+				changeOption($(this).val(), 4, true);
+			} else if ($(this).attr("id") == "dept4") {
+				changeOption($(this).val(), 5 , true);
+			}
+		} else if (deptLevel == 4) {
+			if ($(this).attr("id") == "dept4") {
+				changeOption($(this).val(), 5, true);
+			} else if ($(this).attr("id") == "dept5") {
+				changeOption($(this).val(), 6, true);
+			}
+		} else if (deptLevel == 5) {
+			if ($(this).attr("id") == "dept5") {
+				changeOption($(this).val(), 6, true);
+			}
+		}
+		
+	});
+	$(".join-date,.retire-date").datepicker();
+	if (deptLevel == 1 || deptLevel == 2) {
+		if (deptLevel2 != null) {
+			$("#dept2").val(deptLevel2).trigger("change");
+		}
+	} else if (deptLevel == 3) {
+		if (deptLevel3 != null) {
+			$("#dept3").val(deptLevel3).trigger("change");
+		}
+	} else if (deptLevel == 4) {
+		if (deptLevel4 != null) {
+			$("#dept4").val(deptLevel4).trigger("change");
+		}
+	} else if (deptLevel == 5) {
+		if (deptLevel5 != null) {
+			$("#dept5").val(deptLevel5).trigger("change");
+		}
+	}
+	
+	$('#includingRetireId').on('click', function() {
+		if ($(this).prop('checked')) {
+			$('.include_retire_range').prop('disabled', '');
+			$('#includingRetireId').value="true";
+		} else {
+			$('.include_retire_range').prop('disabled', 'disabled');
+			$('#includingRetireId').value="false";
+		}
+	});
+	$('#includingRetireId').attr('checked', includingCheck).triggerHandler('click');
+	$('#technicalJobId').on('click', function() {
+		if ($(this).prop('checked')) {
+			$('.technicalJobCls').prop('checked', true);
+			$('#technicalJobId').value="true";
+		} else {
+			$('.technicalJobCls').prop('checked', false);
+			$('#technicalJobId').value="false";
+		}
+	});
+	
+	$('#otherId').on('click', function() {
+		console.log("abc");
+		if ($(this).prop('checked')) {
+			$('#technicalJobId').prop('checked', true);
+		} else {
+			$('#technicalJobId').prop('checked', false);
+		}
+	});
+	
+	
+});
+
+
+/*]]>*/
+</script>
+<body>
+	<!-- 共通部品のヘッダーをインクルード -->
+	<div id="layout" th:include="expireMNG/common/header :: header (active='searchCommute')"></div>
+
+	<div class="container-fluid">
+		<form style="width: 1270px;margin:0 auto;" id="searchCommuteForm" th:action="@{/expireMNG/doSearchCommute}" method="post" th:object="${submitForm}" class="form-horizontal" enctype="multipart/form-data">
+			<fieldset>
+			<p th:if="${successMsg != null}" th:text="${successMsg}" class="alert alert-success"></p>
+				<legend class="row mt10"><b>通勤管理</b></legend>
+				<div class="row mb20">
+					<div class="col-md-12">
+						<div th:if="${errMsg} != null" class="alert alert-danger">
+							<ul th:if="${errMsg} != null" style="list-style:none;">
+								<li th:each="error : ${errMsg}">
+									<p class="text-danger" th:text="${error}"></p>
+								</li>
+							</ul>
+						</div>
+						<div class="form-group">
+							<label class="col-md-1 control-label">検索条件</label>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-1 control-label">社員区分</label>
+							<div class="col-sm-5 ">
+								<label class="checkbox-inline">
+									<input type="checkbox" id="technicalJobId" th:field="${submitForm.searchForm.technicalJob}" />
+									<span>技術職&nbsp;&nbsp;（</span>
+								</label>
+								<span></span>
+								<label class="checkbox-inline">
+									<input type="checkbox" id="dispatchId" th:field="${submitForm.searchForm.dispatch}" class="technicalJobCls"/>
+									<span>派遣&nbsp;&nbsp;</span>
+								</label>
+								<label class="checkbox-inline">
+									<input type="checkbox" id="contractId" th:field="${submitForm.searchForm.contract}" class="technicalJobCls"/>
+									<span>請負&nbsp;&nbsp;</span>
+								</label>
+								<label class="checkbox-inline">
+									<input type="checkbox" id="otherId" th:field="${submitForm.searchForm.other}" class="technicalJobCls"/>
+									<span>その他）&nbsp;&nbsp;</span>
+								</label>
+								<label class="checkbox-inline">
+									<input type="checkbox" th:field="${submitForm.searchForm.generalStaff}"/>
+									<span>一般職&nbsp;&nbsp;</span>
+								</label>
+							</div>
+						</div>
+						
+						<div class="form-group">
+							<label class="col-sm-1 control-label">部署<span class="label label-danger">必須</span></label>
+							<div class="col-sm-2">
+								<select th:if="${deptLevel} &lt;= 2" class="form-control input-sm " th:name="searchForm.deptLevel2" id="dept2">
+									<option value="-1" selected="selected">（未選択）</option>
+									<option th:each="dept : ${depts2}" th:value="${dept.deptCode}" th:text="${dept.deptName}"></option>
+								</select>
+								<input id="dept2Str" th:value="${depts2.deptName}" th:if="${deptLevel} &gt; 2" disabled="disabled" class="form-control input-sm"/>
+								<input th:if="${deptLevel} &gt; 2" type="hidden" name="searchForm.dept2" th:value="${depts2.deptCode}"/>
+							</div>
+							<div class="col-sm-2 col-sm-offset-1">
+								<select th:if="${deptLevel} &lt;= 3" class="form-control input-sm " th:name="searchForm.deptLevel3" id="dept3">
+									<option value="-1" selected="selected">（未選択）</option>
+									<option th:each="dept : ${depts3}" th:value="${dept.deptCode}" th:text="${dept.deptName}"></option>
+								</select>
+								<input id="dept3Str" th:value="${depts3.deptName}" th:if="${deptLevel} &gt; 3" disabled="disabled" class="form-control input-sm"/>
+								<input th:if="${deptLevel} &gt; 3" type="hidden" name="searchForm.dept3" th:value="${depts3.deptCode}"/>
+							</div>
+							<div class="col-sm-2 col-sm-offset-1">
+								<select th:if="${deptLevel} &lt;= 4" class="form-control input-sm" th:name="searchForm.deptLevel4" id="dept4">
+									<option value="-1" selected="selected">（未選択）</option>
+									<option th:each="dept : ${depts4}" th:value="${dept.deptCode}" th:text="${dept.deptName}"></option>
+								</select>
+								<input id="dept4Str" th:value="${depts4.deptName}" th:if="${deptLevel} &gt; 4" disabled="disabled" class="form-control input-sm"/>
+								<input th:if="${deptLevel} &gt; 4" type="hidden" name="searchForm.dept4" th:value="${depts4.deptCode}"/>
+							</div>
+							<div class="col-sm-2">
+								<select th:if="${deptLevel} &lt;= 5" class="form-control input-sm" th:name="searchForm.deptLevel5" id="dept5">
+									<option value="-1" selected="selected">（未選択）</option>
+									<option th:each="dept : ${depts5}" th:value="${dept.deptCode}" th:text="${dept.deptName}"></option>
+								</select>
+								<input th:value="${depts5.deptName}" th:if="${deptLevel} &gt; 5" disabled="disabled" class="form-control input-sm"/>
+								<input th:if="${deptLevel} &gt; 5" type="hidden" name="searchForm.dept5" th:value="${depts5.deptCode}"/>
+							</div>
+						</div>
+						
+						<div class="form-group">
+							<label class="col-sm-1 control-label">社員ID</label>
+							<div class="col-sm-2">
+								<input type="text" class="form-control input-sm " th:field="${submitForm.searchForm.empIdSearch}" th:errorclass="fieldError"/>
+							</div>
+							<label class="col-sm-1 control-label">氏名</label>
+							<div class="col-sm-2">
+								<input type="text" class="form-control input-sm" th:field="${submitForm.searchForm.empNameSearch}"/>
+							</div>
+							<label class="col-sm-1 control-label">通勤手段</label>
+							<div class="col-sm-4" >
+								<label class="checkbox-inline" th:each = "objCommuteName,idx : ${lstObjCommuteNames}" style="margin-left: 0px;padding-right:5px">
+									<input type="checkbox"  th:value ="${objCommuteName.commuteCode}" class="checkedCommuteCode" 
+									th:name="'searchForm.commuteCodeLst[' + ${idx.index} + ']'" th:checked="${submitForm.searchForm.commuteCodeLst == null ? true : #lists.contains(submitForm.searchForm.commuteCodeLst, objCommuteName.commuteCode)}"/>
+									<span th:text ="${objCommuteName.commuteName}" ></span>
+								</label>
+								
+							</div>
+						</div>
+						
+						<div class="form-group">
+							<label  class="col-sm-1 control-label">退職者表示</label>
+							<div class="col-sm-2">
+								<label class="checkbox-inline">
+									<input type="checkbox" th:field="${submitForm.searchForm.includingRetire}" id ="includingRetireId"/>
+									<span>退職者含む&nbsp;&nbsp;</span>
+								</label>
+							</div>
+				
+							<label class="col-sm-1 control-label">退職日</label>
+							<div class="col-sm-2">
+								<input type="text" class="form-control input-sm input-date include_retire_range" th:field="${submitForm.searchForm.retirementDateFrom}" th:errorclass="fieldError"/>
+							</div>
+							<div class="col-sm-1 text-center" style="margin-top: 4px;">
+								<label class="control-label" for="name">～</label>
+							</div>
+							<div class="col-sm-2">
+								<input type="text" class="form-control input-sm input-date include_retire_range" th:field="${submitForm.searchForm.retirementDateTo}" th:errorclass="fieldError"/>
+							</div>
+
+						</div>
+						
+						<div class="form-group">
+							<label  class="col-sm-1 control-label">有効期限</label>
+							<div class="col-sm-5 ">
+								<label class="checkbox-inline">
+									<input type="checkbox" name="searchForm.conditionMonth" value="1" onchange="checkConditionMonth(this)" th:checked="${submitForm.searchForm.conditionMonth == 1}"/>
+									<span>1ヵ月以内&nbsp;&nbsp;</span>
+								</label>
+								<label class="checkbox-inline">
+									<input type="checkbox" name="searchForm.conditionMonth" value="3" onchange="checkConditionMonth(this)" th:checked="${submitForm.searchForm.conditionMonth == 3}"/>
+									<span>3ヵ月以内&nbsp;&nbsp;</span>
+								</label>
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="col-sm-5 col-sm-offset-2">
+								<button type="button" onclick="doSearchCommute();" class="col-sm-2 btn btn-sm btn-success">
+									<span class="glyphicon glyphicon-search"></span>&nbsp;検索
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</fieldset>
+			<div id="commuteResultRows" th:if="${submitForm.listEmpResultSearch != null}">
+				<legend class="row mt10"><b>検索結果</b></legend>
+				<div id="alertMessage" class="alert alert-danger" style="display:none"></div>
+				<div class="form-group">
+					<div class="col-sm-2 col-sm-offset-4">
+						<button type="button" onclick="doExportCSVCommute();" class="col-sm-12 btn btn-sm btn-primary" >
+							<span class="glyphicon glyphicon-list-alt"></span>&nbsp;CSV出力
+						</button>
+					</div>
+					<div class="col-sm-2">
+						<button type="button" class=" col-sm-12  btn btn-sm btn-primary" th:onclick="'downloadAllFileExpireCommute();'">
+							<span class="glyphicon glyphicon-download"></span>&nbsp;書類ダウンロード
+						</button>
+					</div>
+					<div class="col-sm-2">
+						<button type="button" class=" col-sm-12 btn btn-sm btn-primary" onclick="saveExpiryDateCommuteManagement();">
+							<span class="glyphicon  glyphicon-registration-mark"></span>&nbsp;登録
+						</button>
+					</div>
+				</div>
+				<table  id="mainTable" class="table-condensed table-hover dataTable no-footer main_window_table">
+					<thead>
+						<tr class="active">
+							<th  class="colorStyle">社員ID</th>
+							<th  class="colorStyle">氏名</th>
+							<th  class="colorStyle">入社日</th>
+							<th  class="colorStyle">退職日</th>
+							<th  class="colorStyle">社員区分</th>
+							<th  class="colorStyle">業務区分</th>
+							<th  class="colorStyle">会社略称</th>
+							<th  class="colorStyle">BU</th>
+							<th  class="colorStyle">CC</th>
+							<th  class="colorStyle">CF</th>
+							<th  class="colorStyle">適用日</th>
+							<th class="colorStyle">通勤手段</th>
+							<th class="colorStyle">免許期限</th>
+							<th class="colorStyle">書類(表)</th>
+							<th class="colorStyle">書類(裏)</th>
+							<th class="colorStyle">車検証期限</th>
+							<th class="colorStyle">書類</th>
+							<th class="colorStyle">任意保険期限</th>
+							<th class="colorStyle">書類</th>
+							<th class="colorStyle">備考</th>
+							<th class="colorStyle">登録日</th>
+							<th class="colorStyle">登録者</th>
+							<th class="colorStyle">書類</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr th:each="emp,idx : ${submitForm.listEmpResultSearch}">
+							<td><span th:text="${emp.empId}"></span></td>
+							<td><span th:text="${emp.empName}"></span></td>
+							<td><span th:text="${emp.joinDateStr}"></span></td>
+							<td><span th:text="${emp.retireDateStr}"></span></td>
+							<td><span th:text="${emp.empDivisionStr}"></span></td>
+							<td><span th:text="${emp.empKindStr}"></span></td>
+							<td><span th:text="${emp.deptNameS}"></span></td>
+							<td><span th:text="${emp.deptName3}"></span></td>
+							<td><span th:text="${emp.deptName4}"></span></td>
+							<td><span th:text="${emp.deptName5}"></span></td>
+							<td><span th:text="${emp.newAnnouncementDateStr}"></span></td>
+							<td th:attr="data-commuteCode=${emp.commuteCode}"><span th:text="${emp.commuteName}"></span></td>
+							<td>
+								<th:block th:if="${emp.requiredExpiryDateLicence != null and emp.requiredExpiryDateLicence }">
+									<input type="text" th:name="'expiryDateLicence' + ${idx.index} + ''" class="form-control input-sm input-date" 
+										th:classappend ="${#strings.equals(emp.expiryDateLicenceCheck, 3) ? 'clsExpireDate3Month' :#strings.equals(emp.expiryDateLicenceCheck, 1) ? 'clsExpireDate1Month' : ''}" 
+									th:value="${emp.expiryDateLicence}" th:onchange="'checkIsSaveDataCommute('+ ${idx.index} + ')'"/>
+								</th:block>
+							</td>
+							<td>
+								<th:block th:if="${emp.requiredExpiryDateLicence != null and emp.requiredExpiryDateLicence }">
+									<input type="file" th:name="'expiryFilePathLicenceFront' + ${idx.index} + ''" class="form-control input-sm file_upload" accept="image/*"
+										th:onchange="'checkIsSaveDataCommute('+ ${idx.index} + ')'"/>
+									<a th:unless="${#strings.isEmpty(emp.expiryFilePathLicenceFrontName)}" th:text="${emp.expiryFilePathLicenceFrontName}"
+										th:href="@{/expireMNG/expireCommute/downloadOneFile(fileName=${emp.expiryFilePathLicenceFrontName},typeDownload=0,typeView=0 )}"></a>
+									<input type="hidden" th:name="'expiryFilePathLicenceFrontPath' + ${idx.index} + ''" th:value="${emp.expiryFilePathLicenceFrontName}"/>
+								</th:block>
+							</td>
+							<td>
+								<th:block th:if="${emp.requiredExpiryDateLicence != null and emp.requiredExpiryDateLicence }">
+									<input type="file" th:name="'expiryFilePathLicenceBack' + ${idx.index} + ''" class="form-control input-sm file_upload" accept="image/*"
+										th:onchange="'checkIsSaveDataCommute('+ ${idx.index} + ')'"/>
+									<a th:unless="${#strings.isEmpty(emp.expiryFilePathLicenceBackName)}" th:text="${emp.expiryFilePathLicenceBackName}"
+										th:href="@{/expireMNG/expireCommute/downloadOneFile(fileName=${emp.expiryFilePathLicenceBackName},typeDownload=0,typeView=1)}"></a>
+									<input type="hidden" th:name="'expiryFilePathLicenceBackPath' + ${idx.index} + ''" th:value="${emp.expiryFilePathLicenceBackName}"/>
+								</th:block>
+							</td>
+							<td>
+								<th:block th:if="${emp.requiredExpiryDateInspection != null and emp.requiredExpiryDateInspection }">
+									<input type="text" th:name="'expiryDateInspection' + ${idx.index} + ''" class="form-control input-sm input-date" 
+										th:classappend ="${#strings.equals(emp.expiryDateInspectionCheck, 3) ? 'clsExpireDate3Month' :#strings.equals(emp.expiryDateInspectionCheck, 1) ? 'clsExpireDate1Month' : ''}" 
+										th:value="${emp.expiryDateInspection}" th:onchange="'checkIsSaveDataCommute('+ ${idx.index} + ')'"/>
+								</th:block>
+							</td>
+							<td>
+								<th:block th:if="${emp.requiredExpiryDateInspection != null and emp.requiredExpiryDateInspection }">
+									<input type="file" th:name="'expiryFilePathInspection' + ${idx.index} + ''" class="form-control input-sm " accept="image/*"
+										th:onchange="'checkIsSaveDataCommute('+ ${idx.index} + ')'"/>
+									<a th:unless="${#strings.isEmpty(emp.expiryFilePathInspectionName)}" th:text="${emp.expiryFilePathInspectionName}"
+										th:href="@{/expireMNG/expireCommute/downloadOneFile(fileName=${emp.expiryFilePathInspectionName},typeDownload=1 )}"></a>
+									<input type="hidden" th:name="'expiryFilePathInspectionPath' + ${idx.index} + ''" th:value="${emp.expiryFilePathInspectionName}"/>
+								</th:block>
+							</td>
+							<td>
+								<th:block th:if="${emp.requiredExpiryDateInsurance != null and emp.requiredExpiryDateInsurance }">
+									<input type="text" th:name="'expiryDateInsurance' + ${idx.index} + ''" class="form-control input-sm input-date" 
+										th:classappend ="${#strings.equals(emp.expiryDateInsuranceCheck, 3) ? 'clsExpireDate3Month' :#strings.equals(emp.expiryDateInsuranceCheck, 1) ? 'clsExpireDate1Month' : ''}"
+										th:value="${emp.expiryDateInsurance}" th:onchange="'checkIsSaveDataCommute('+ ${idx.index} + ')'"/>
+								</th:block>
+							</td>
+							<td>
+								<th:block th:if="${emp.requiredExpiryDateInsurance != null and emp.requiredExpiryDateInsurance }">
+									<input type="file" th:name="'expiryFilePathInsurance' + ${idx.index} + ''" class="form-control input-sm file_upload" accept="image/*"
+										th:onchange="'checkIsSaveDataCommute('+ ${idx.index} + ')'"/>
+									<a th:unless="${#strings.isEmpty(emp.expiryFilePathInsuranceName)}" th:text="${emp.expiryFilePathInsuranceName}"
+										th:href="@{/expireMNG/expireCommute/downloadOneFile(fileName=${emp.expiryFilePathInsuranceName},typeDownload=2)}"></a>
+									<input type="hidden" th:name="'expiryFilePathInsurancePath' + ${idx.index} + ''" th:value="${emp.expiryFilePathInsuranceName}"/>
+								</th:block>
+							</td>
+							<td>
+								<th:block th:if="${(emp.requiredExpiryDateLicence != null and emp.requiredExpiryDateLicence)
+												or (emp.requiredExpiryDateInspection  != null and emp.requiredExpiryDateInspection )
+												or (emp.requiredExpiryDateInsurance != null and emp.requiredExpiryDateInsurance)}">
+									<input type="text" th:name="'specialNotes' + ${idx.index} + ''" class="form-control input-sm" th:value="${emp.specialNotes}" 
+										th:onchange="'checkIsSaveDataCommute('+ ${idx.index} + ')'"/>
+								</th:block>
+							</td>
+							<td><span th:text="${emp.updateDateStr}"></span></td>
+							<td><span th:text="${emp.updateBy}"></span></td>
+							<td style="text-align: center;">
+								<input  th:if="${emp.showButtonDownload}" type="button" name="btnDocument4" class="form-control input-sm  btn btn-success  btn-sm"
+									th:onclick="'downloadAllFileOfAnEmployeeCommute(\'' + ${emp.expiryFilePathLicenceFrontName} + '\'
+																				, \'' + ${emp.expiryFilePathLicenceBackName} + '\'
+																				, \'' + ${emp.expiryFilePathInspectionName} + '\'
+																				, \'' + ${emp.expiryFilePathInsuranceName} + '\')'"
+									value ="ダウンロード" style="width: 90px"/>
+							</td>
+							<input type="hidden" th:name="'commuteCode' + ${idx.index} + ''" th:value="${emp.commuteCode}"/>
+							<input type="hidden" th:name="'new' + ${idx.index} + ''" th:value="${emp.new}"/>
+							<input type="hidden" th:name="'save' + ${idx.index} + ''" value="false"/>
+							<input type="hidden" th:name="'empId' + ${idx.index} + ''" th:value="${emp.empId}"/>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</form>
+	</div>
+	<!-- 共通部品のフッターをインクルード -->
+	<div id="layout" th:include="common/footer"></div>
+</body>
+</html>
